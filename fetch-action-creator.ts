@@ -110,7 +110,7 @@ const fetchActionCreator: FetchActionCreator = (
   actions: Actions | null = Object.create(null),
   conditional?: Conditional
 ): FetchAction =>
-  (dispatch: ThunkDispatch<any, void, AnyAction>, getState: () => Object): Promise<void> => {
+  async function(dispatch: ThunkDispatch<any, void, AnyAction>, getState: () => Object): Promise<AnyAction> {
 
     // If we have a condition for fetching, check if we should continue.
     if (

@@ -28,7 +28,7 @@ const fetchAsyncSuccess = () => new Promise(resolve => {
   setTimeout(resolve, 1000);
 });
 const fetchError = () => Promise.reject(new Error('fetch error'));
-const fetchError2 = () => Promise.resolve(new Response(404));
+const fetchError404 = () => Promise.resolve(new Response(404));
 const fetchError3 = () => Promise.resolve(new ErrorResponse(404));
 const fetchError4 = () => {
   const res = new ErrorResponse(404);
@@ -100,7 +100,7 @@ describe('fetchActionCreator', () => {
 
   // REJECT (server)
   it('should dispatch a server reject action', () => {
-    global.fetch = fetchError2;
+    global.fetch = fetchError404;
     const action = fetchActionCreator(ID, URL, INIT);
     let dispatchCalls = 0;
     const dispatch = ({ type, statusCode }) => {
@@ -227,4 +227,32 @@ describe('fetchActionCreator', () => {
       expect(dispatchCalls).to.equal(2);
     });
   });
+
+  // RESOLVE return
+  it('should return a request action', async function() {
+    global.fetch = fetchSuccess;
+    const action = fetchActionCreator(ID, URL, INIT);
+    const dispatch = ({ type }) => {};
+    const result = await action(dispatch, getEmptyState);
+    expect(result).to.have.own.property('type');
+    expect(result.type).to.equal(`RESOLVE_${ID}`);
+    expect(result).to.have.own.property('body');
+    expect(result).to.have.own.property('statusCode');
+    expect(result.statusCode).to.equal(200);
+  });
+
+  // REJECT return
+  it('should return a fetch 404 action', async function() {
+    global.fetch = fetchError404;
+    const action = fetchActionCreator(ID, URL, INIT);
+    const dispatch = ({ type }) => {};
+    const result = await action(dispatch, getEmptyState);
+    expect(result).to.have.own.property('type');
+    expect(result.type).to.equal(`REJECT_${ID}`);
+    expect(result).to.have.own.property('error');
+    expect(result).to.have.own.property('statusCode');
+    expect(result.statusCode).to.equal(404);
+  });
+
+
 });
