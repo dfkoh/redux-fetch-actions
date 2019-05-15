@@ -4,6 +4,7 @@ require('abortcontroller-polyfill/dist/polyfill-patch-fetch');
 
 const Response = function(status) {
   this.status = status;
+  this.headers = [];
 };
 Response.prototype.clone = function() {
   return this;
@@ -15,6 +16,7 @@ Response.prototype.text = () => Promise.resolve('response.text()');
 
 const ErrorResponse = function(status) {
   this.status = status;
+  this.headers = [];
 };
 ErrorResponse.prototype.clone = function() {
   return this;

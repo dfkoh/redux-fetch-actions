@@ -51,7 +51,7 @@ type Init = RequestInit | ((state?: Object) => RequestInit);
 
 export interface RejectAction {
   error: Object | string;
-  headers: Headers | null;
+  headers: Object | null;
   statusCode: null | number;
   type: string;
 }
@@ -62,17 +62,17 @@ export interface RequestAction {
 
 export interface ResolveAction {
   body: Object | string;
-  headers: Headers;
+  headers: Object;
   statusCode: number;
   type: string;
 }
 
 class FetchError {
-  headers: Headers;
+  headers: Object;
   message: Object | string;
   statusCode: number;
 
-  constructor(message: Object | string, headers: Headers, statusCode: number) {
+  constructor(message: Object | string, headers: Object, statusCode: number) {
     this.headers = headers;
     this.message = message;
     this.statusCode = statusCode;
@@ -103,7 +103,7 @@ const makeActionType = (subtype: string, id: string): string =>
 
 const parseResponse = async function(
   response: Response,
-): Promise<[Object | string, Headers, number]> {
+): Promise<[Object | string, Object, number]> {
   const response2 = response.clone();
   let body = '';
   try {
@@ -111,7 +111,14 @@ const parseResponse = async function(
   } catch (e) {
     body = await response.text();
   }
-  return [body, response.headers, response.status];
+
+  // Convert headers into a plain object so redux doesn't complain
+  let headers: any = {};
+  response.headers.forEach(entry => {
+    headers[entry[0]] = entry[1];
+  });
+
+  return [body, headers, response.status];
 };
 
 const fetchActionTypes = (id: string): FetchActionTypes => ({
