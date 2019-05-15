@@ -1,4 +1,4 @@
-# Redux Fetch Actions
+# Redux Fetch Wrapper 
 
 Fetches using standardized, four-part asynchronous actions for redux-thunk.
 Based on [fetch-action-creator](https://github.com/CharlesStover/fetch-action-creator).
