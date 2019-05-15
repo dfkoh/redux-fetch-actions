@@ -22,8 +22,15 @@ interface Conditional {
 
 type FetchAction = ThunkAction<Promise<AnyAction>, any, void, AnyAction>;
 
-export interface FetchActionCreator {
-  default?: FetchActionCreator;
+export interface FetchActionTypes {
+  ABORT: string;
+  REJECT: string;
+  REQUEST: string;
+  RESOLVE: string;
+}
+
+export interface MakeFetchActions {
+  default?: MakeFetchActions;
   (
     id: string,
     input: Request | string,
@@ -31,7 +38,7 @@ export interface FetchActionCreator {
     actions: Actions,
     abortController?: AbortController | null,
     conditional?: Conditional,
-  ): FetchAction;
+  ): [FetchActionTypes, FetchAction];
 }
 
 type FetchStateAction =
@@ -91,6 +98,9 @@ const createAction = (
   return actionMutator(action);
 };
 
+const makeActionType = (subtype: string, id: string): string =>
+  `${id}_${subtype}`;
+
 const parseResponse = async function(
   response: Response,
 ): Promise<[Object | string, Headers, number]> {
@@ -104,15 +114,21 @@ const parseResponse = async function(
   return [body, response.headers, response.status];
 };
 
-const fetchActionCreator: FetchActionCreator = (
+const makeFetchActions: MakeFetchActions = (
   id: string,
   url: Request | string,
   init: Init | null = Object.create(null),
   actions: Actions | null = Object.create(null),
   abortController?: AbortController | null,
   conditional?: Conditional,
-): FetchAction =>
-  async function(
+): [FetchActionTypes, FetchAction] => {
+  const fetchActionTypes = {
+    ABORT: makeActionType('ABORT', id),
+    REQUEST: makeActionType('REQUEST', id),
+    RESOLVE: makeActionType('RESOLVE', id),
+    REJECT: makeActionType('REJECT', id),
+  }
+  const fetchDispatcher = async function(
     dispatch: ThunkDispatch<any, void, AnyAction>,
     getState: () => Object,
   ): Promise<AnyAction> {
@@ -131,7 +147,7 @@ const fetchActionCreator: FetchActionCreator = (
       // When the signal aborts, dispatch the abort action.
       signal.addEventListener('abort', () => {
         const abortAction: AbortAction = {
-          type: 'ABORT_' + id,
+          type: makeActionType('ABORT', id),
         };
         dispatch(
           createAction(
@@ -147,7 +163,7 @@ const fetchActionCreator: FetchActionCreator = (
 
     // Dispatch the request action.
     const requestAction: RequestAction = {
-      type: 'REQUEST_' + id,
+      type: makeActionType('REQUEST', id),
     };
     dispatch(
       createAction(
@@ -164,7 +180,7 @@ const fetchActionCreator: FetchActionCreator = (
         error: err.message || 'Script error',
         headers: err instanceof FetchError ? err.headers : null,
         statusCode: err instanceof FetchError ? err.statusCode : null,
-        type: 'REJECT_' + id,
+        type: makeActionType('REJECT', id),
       };
 
       const result = createAction(
@@ -207,7 +223,7 @@ const fetchActionCreator: FetchActionCreator = (
       body,
       headers,
       statusCode,
-      type: 'RESOLVE_' + id,
+      type: makeActionType('RESOLVE', id),
     };
     const result = createAction(
       resolveAction,
@@ -219,7 +235,9 @@ const fetchActionCreator: FetchActionCreator = (
     dispatch(result);
     return result;
   };
+  return [fetchActionTypes, fetchDispatcher];
+};
 
-fetchActionCreator.default = fetchActionCreator;
+makeFetchActions.default = makeFetchActions;
 
-module.exports = fetchActionCreator;
+module.exports = makeFetchActions;

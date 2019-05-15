@@ -1,5 +1,5 @@
 const expect = require('chai').expect;
-const fetchActionCreator = require('./fetch-action-creator');
+const makeFetchActions = require('./fetch-action-creator');
 require('abortcontroller-polyfill/dist/polyfill-patch-fetch');
 
 const Response = function(status) {
@@ -19,15 +19,19 @@ const ErrorResponse = function(status) {
 ErrorResponse.prototype.clone = function() {
   return this;
 };
-ErrorResponse.prototype.json = () => new Promise((resolve, reject) => { 
-  throw new Error('json parse error'); 
-});
+ErrorResponse.prototype.json = () =>
+  new Promise((resolve, reject) => {
+    throw new Error('json parse error');
+  });
 ErrorResponse.prototype.text = () => Promise.resolve('response.text()');
 
-const fetchAsyncSuccess = (_, { signal }) => new Promise((resolve, reject) => {
-  signal.addEventListener('abort', () => { reject(new Error()) });
-  setTimeout(resolve, 1000);
-});
+const fetchAsyncSuccess = (_, {signal}) =>
+  new Promise((resolve, reject) => {
+    signal.addEventListener('abort', () => {
+      reject(new Error());
+    });
+    setTimeout(resolve, 1000);
+  });
 const fetchError = () => Promise.reject(new Error('fetch error'));
 const fetchError404 = () => Promise.resolve(new Response(404));
 const fetchErrorJSON = () => Promise.resolve(new ErrorResponse(404));
@@ -35,13 +39,14 @@ const fetchSuccess = () => Promise.resolve(new Response(200));
 const getEmptyState = () => Object.create(null);
 
 const ID = 'TEST';
-const INIT = { body: 'body' };
+const INIT = {body: 'body'};
 const URL = 'http://localhost/';
 
-describe('fetchActionCreator', () => {
+const makeActionType = (subtype, id) => `${id}_${subtype}`;
 
+describe('makeFetchActions', () => {
   it('should create a thunk action', () => {
-    const action = fetchActionCreator(ID, URL, INIT);
+    const [types, action] = makeFetchActions(ID, URL, INIT);
     expect(action).to.be.a('function');
     expect(action.length).to.equal(2);
   });
@@ -49,12 +54,12 @@ describe('fetchActionCreator', () => {
   // REQUEST
   it('should dispatch a request action', async function() {
     global.fetch = fetchSuccess;
-    const action = fetchActionCreator(ID, URL, INIT);
+    const [types, action] = makeFetchActions(ID, URL, INIT);
     let dispatchCalls = 0;
-    const dispatch = ({ type }) => {
+    const dispatch = ({type}) => {
       dispatchCalls++;
       if (dispatchCalls === 1) {
-        expect(type).to.equal('REQUEST_' + ID);
+        expect(type).to.equal(makeActionType('REQUEST', ID));
       }
     };
     await action(dispatch, getEmptyState);
@@ -64,12 +69,12 @@ describe('fetchActionCreator', () => {
   // RESOLVE
   it('should dispatch a resolve action', async function() {
     global.fetch = fetchSuccess;
-    const action = fetchActionCreator(ID, URL, INIT);
+    const [types, action] = makeFetchActions(ID, URL, INIT);
     let dispatchCalls = 0;
-    const dispatch = ({ type }) => {
+    const dispatch = ({type}) => {
       dispatchCalls++;
       if (dispatchCalls === 2) {
-        expect(type).to.equal('RESOLVE_' + ID);
+        expect(type).to.equal(makeActionType('RESOLVE', ID));
       }
     };
     await action(dispatch, getEmptyState);
@@ -79,12 +84,12 @@ describe('fetchActionCreator', () => {
   // REJECT (fetch)
   it('should dispatch a fetch reject action', async function() {
     global.fetch = fetchError;
-    const action = fetchActionCreator(ID, URL, INIT);
+    const [types, action] = makeFetchActions(ID, URL, INIT);
     let dispatchCalls = 0;
-    const dispatch = ({ type }) => {
+    const dispatch = ({type}) => {
       dispatchCalls++;
       if (dispatchCalls === 2) {
-        expect(type).to.equal('REJECT_' + ID);
+        expect(type).to.equal(makeActionType('REJECT', ID));
       }
     };
     await action(dispatch, getEmptyState);
@@ -94,12 +99,12 @@ describe('fetchActionCreator', () => {
   // REJECT (server)
   it('should dispatch a server reject action', async function() {
     global.fetch = fetchError404;
-    const action = fetchActionCreator(ID, URL, INIT);
+    const [types, action] = makeFetchActions(ID, URL, INIT);
     let dispatchCalls = 0;
-    const dispatch = ({ type, statusCode }) => {
+    const dispatch = ({type, statusCode}) => {
       dispatchCalls++;
       if (dispatchCalls === 2) {
-        expect(type).to.equal('REJECT_' + ID);
+        expect(type).to.equal(makeActionType('REJECT', ID));
       }
     };
     await action(dispatch, getEmptyState);
@@ -109,13 +114,13 @@ describe('fetchActionCreator', () => {
   // REJECT (json parse error)
   it('should dispatch a server reject action even with json error', async function() {
     global.fetch = fetchErrorJSON;
-    const action = fetchActionCreator(ID, URL, INIT);
+    const [types, action] = makeFetchActions(ID, URL, INIT);
     let dispatchCalls = 0;
-    const dispatch = ({ type, statusCode }) => {
+    const dispatch = ({type, statusCode}) => {
       dispatchCalls++;
       if (dispatchCalls === 2) {
-        expect(type).to.equal('REJECT_' + ID);
-        expect(statusCode).to.equal(404)
+        expect(type).to.equal(makeActionType('REJECT', ID));
+        expect(statusCode).to.equal(404);
       }
     };
     await action(dispatch, getEmptyState);
@@ -128,15 +133,18 @@ describe('fetchActionCreator', () => {
     let called = false;
     let resolve = () => {};
     abortController = new AbortController();
-    const abortPromise = new Promise((r) => {
+    const abortPromise = new Promise(r => {
       resolve = r;
     });
-    const action = fetchActionCreator(ID, URL, INIT, null, abortController);
+    const [types, action] = makeFetchActions(ID, URL, INIT, null, abortController);
     let dispatchCalls = 0;
-    const dispatch = (action) => {
+    const dispatch = action => {
       dispatchCalls++;
-      if (action.type !== 'REQUEST_' + ID && action.type !== 'REJECT_' + ID) {
-        expect(action.type).to.equal('ABORT_' + ID);
+      if (
+        action.type !== makeActionType('REQUEST', ID) &&
+        action.type !== makeActionType('REJECT', ID)
+      ) {
+        expect(action.type).to.equal(makeActionType('ABORT', ID));
         expect(dispatchCalls).to.equal(2);
         called = true;
         resolve();
@@ -151,10 +159,7 @@ describe('fetchActionCreator', () => {
   // CONDITIONAL
   it('should respect the conditional', async function() {
     global.fetch = fetchSuccess;
-    const action = fetchActionCreator(
-      ID, URL, INIT, null, null,
-      () => false
-    );
+    const [types, action] = makeFetchActions(ID, URL, INIT, null, null, () => false);
     let dispatchCalls = 0;
     const dispatch = () => {
       dispatchCalls++;
@@ -165,11 +170,9 @@ describe('fetchActionCreator', () => {
 
   it('should allow object action mutation', async function() {
     global.fetch = fetchSuccess;
-    const action = fetchActionCreator(
-      ID, URL, INIT, {
-        onRequest: { test: 123 }
-      }
-    );
+    const [types, action] = makeFetchActions(ID, URL, INIT, {
+      onRequest: {test: 123},
+    });
     let dispatchCalls = 0;
     const dispatch = action => {
       dispatchCalls++;
@@ -183,13 +186,11 @@ describe('fetchActionCreator', () => {
 
   it('should allow function action mutation', async function() {
     global.fetch = fetchSuccess;
-    const action = fetchActionCreator(
-      ID, URL, INIT, {
-        onRequest: requestAction => ({
-          type: 'NEW'
-        })
-      }
-    );
+    const [types, action] = makeFetchActions(ID, URL, INIT, {
+      onRequest: requestAction => ({
+        type: 'NEW',
+      }),
+    });
     let dispatchCalls = 0;
     const dispatch = action => {
       dispatchCalls++;
@@ -204,11 +205,11 @@ describe('fetchActionCreator', () => {
   // RESOLVE return
   it('should return a request action', async function() {
     global.fetch = fetchSuccess;
-    const action = fetchActionCreator(ID, URL, INIT);
-    const dispatch = ({ type }) => {};
+    const [types, action] = makeFetchActions(ID, URL, INIT);
+    const dispatch = ({type}) => {};
     const result = await action(dispatch, getEmptyState);
     expect(result).to.have.own.property('type');
-    expect(result.type).to.equal(`RESOLVE_${ID}`);
+    expect(result.type).to.equal(makeActionType('RESOLVE', ID));
     expect(result).to.have.own.property('body');
     expect(result).to.have.own.property('statusCode');
     expect(result.statusCode).to.equal(200);
@@ -217,15 +218,13 @@ describe('fetchActionCreator', () => {
   // REJECT return
   it('should return a fetch 404 action', async function() {
     global.fetch = fetchError404;
-    const action = fetchActionCreator(ID, URL, INIT);
-    const dispatch = ({ type }) => {};
+    const [types, action] = makeFetchActions(ID, URL, INIT);
+    const dispatch = ({type}) => {};
     const result = await action(dispatch, getEmptyState);
     expect(result).to.have.own.property('type');
-    expect(result.type).to.equal(`REJECT_${ID}`);
+    expect(result.type).to.equal(makeActionType('REJECT', ID));
     expect(result).to.have.own.property('error');
     expect(result).to.have.own.property('statusCode');
     expect(result.statusCode).to.equal(404);
   });
-
-
 });
