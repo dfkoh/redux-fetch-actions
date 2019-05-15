@@ -1,29 +1,29 @@
 # Redux Fetch Actions
 
 Fetches using standardized, four-part asynchronous actions for redux-thunk.
-Based on [redux-fetch-actions](https://github.com/CharlesStover/redux-fetch-actions).
+Based on [fetch-action-creator](https://github.com/CharlesStover/fetch-action-creator).
 
 Dispatch a single, asynchronous action that fetches a request, and your redux
 store will receive corresponding actions when your fetch API (1) requests, (2)
 resolves a response, (3) rejects an error, and/or (4) is aborted.
 
-[![version](https://img.shields.io/npm/v/redux-fetch-actions.svg)](https://www.npmjs.com/package/redux-fetch-actions)
-[![minified size](https://img.shields.io/bundlephobia/min/redux-fetch-actions.svg)](https://www.npmjs.com/package/redux-fetch-actions)
-[![minzipped size](https://img.shields.io/bundlephobia/minzip/redux-fetch-actions.svg)](https://www.npmjs.com/package/redux-fetch-actions)
-[![downloads](https://img.shields.io/npm/dt/redux-fetch-actions.svg)](https://www.npmjs.com/package/redux-fetch-actions)
-[![build](https://travis-ci.com/dfkoh/redux-fetch-actions.svg)](https://travis-ci.com/dfkoh/redux-fetch-actions/)
+[![version](https://img.shields.io/npm/v/redux-fetch-wrapper.svg)](https://www.npmjs.com/package/redux-fetch-wrapper)
+[![minified size](https://img.shields.io/bundlephobia/min/redux-fetch-wrapper.svg)](https://www.npmjs.com/package/redux-fetch-wrapper)
+[![minzipped size](https://img.shields.io/bundlephobia/minzip/redux-fetch-wrapper.svg)](https://www.npmjs.com/package/redux-fetch-wrapper)
+[![downloads](https://img.shields.io/npm/dt/redux-fetch-wrapper.svg)](https://www.npmjs.com/package/redux-fetch-wrapper)
+[![build](https://travis-ci.com/dfkoh/redux-fetch-wrapper.svg)](https://travis-ci.com/dfkoh/redux-fetch-wrapper/)
 
 ## Install
 
-* `npm install redux-fetch-actions --save` or
-* `yarn add redux-fetch-actions`
+* `npm install redux-fetch-wrapper --save` or
+* `yarn add redux-fetch-wrapper`
 
 Your redux store must be using the `redux-thunk` middleware.
 
 ## Basic Example
 
 ```JS
-import {makeFetchActions, fetchActionTypes} from 'redux-fetch-actions';
+import {makeFetchActions, fetchActionTypes} from 'redux-fetch-wrapper';
 
 const EMPLOYEES = fetchActionTypes('EMPLOYEES');
 const fetchEmployees = () =>
@@ -46,7 +46,7 @@ See the documentation for a list of action properties.
 
 ## Advanced Example
 ```JS
-import {makeFetchActions} from 'redux-fetch-actions';
+import {makeFetchActions} from 'redux-fetch-wrapper';
 
 // We want to include an employee's name in the fetch request.
 const [ADD_EMPLOYEE, fetchAddEmployee] = name =>

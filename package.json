@@ -1,9 +1,9 @@
 {
-  "name": "redux-fetch-actions",
+  "name": "redux-fetch-wrapper",
   "version": "1.0.0",
   "author": "David Koh",
   "bugs": {
-    "url": "https://github.com/dfkoh/redux-fetch-actions/issues"
+    "url": "https://github.com/dfkoh/redux-fetch-wrapper/issues"
   },
   "description": "Fetches using standardized, four-part asynchronous actions for redux-thunk. Based on fetch-action-creator.",
   "devDependencies": {
@@ -17,7 +17,7 @@
     "redux-thunk": "^2.3.0",
     "typescript": "^3.1.2"
   },
-  "homepage": "https://github.com/dfkoh/redux-fetch-actions#readme",
+  "homepage": "https://github.com/dfkoh/redux-fetch-wrapper#readme",
   "keywords": [
     "async",
     "asynchronous",
@@ -35,7 +35,7 @@
   "main": "fetch-actions.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dfkoh/redux-fetch-actions.git"
+    "url": "git+https://github.com/dfkoh/redux-fetch-wrapper.git"
   },
   "scripts": {
     "build": "tsc",
