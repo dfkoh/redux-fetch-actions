@@ -18,5 +18,5 @@
     "strictPropertyInitialization": true,
     "target": "es5"
   },
-  "files": [ "fetch-action-creator.ts" ]
+  "files": [ "fetch-actions.ts" ]
 }

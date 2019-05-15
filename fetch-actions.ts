@@ -38,7 +38,7 @@ export interface MakeFetchActions {
     actions: Actions,
     abortController?: AbortController | null,
     conditional?: Conditional,
-  ): [FetchActionTypes, FetchAction];
+  ): FetchAction;
 }
 
 type FetchStateAction =
@@ -114,6 +114,13 @@ const parseResponse = async function(
   return [body, response.headers, response.status];
 };
 
+const fetchActionTypes = (id: string): FetchActionTypes => ({
+  ABORT: makeActionType('ABORT', id),
+  REQUEST: makeActionType('REQUEST', id),
+  RESOLVE: makeActionType('RESOLVE', id),
+  REJECT: makeActionType('REJECT', id),
+});
+
 const makeFetchActions: MakeFetchActions = (
   id: string,
   url: Request | string,
@@ -121,14 +128,8 @@ const makeFetchActions: MakeFetchActions = (
   actions: Actions | null = Object.create(null),
   abortController?: AbortController | null,
   conditional?: Conditional,
-): [FetchActionTypes, FetchAction] => {
-  const fetchActionTypes = {
-    ABORT: makeActionType('ABORT', id),
-    REQUEST: makeActionType('REQUEST', id),
-    RESOLVE: makeActionType('RESOLVE', id),
-    REJECT: makeActionType('REJECT', id),
-  }
-  const fetchDispatcher = async function(
+): FetchAction =>
+  async function(
     dispatch: ThunkDispatch<any, void, AnyAction>,
     getState: () => Object,
   ): Promise<AnyAction> {
@@ -235,9 +236,9 @@ const makeFetchActions: MakeFetchActions = (
     dispatch(result);
     return result;
   };
-  return [fetchActionTypes, fetchDispatcher];
+
+module.exports = {
+  makeFetchActions,
+  fetchActionTypes,
 };
-
-makeFetchActions.default = makeFetchActions;
-
-module.exports = makeFetchActions;
+exports.default = makeFetchActions;

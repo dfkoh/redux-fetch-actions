@@ -1,11 +1,11 @@
 {
-  "name": "fetch-action-creator",
-  "version": "2.0.3",
-  "author": "Charles Stover",
+  "name": "redux-fetch-actions",
+  "version": "1.0.0",
+  "author": "David Koh",
   "bugs": {
-    "url": "https://github.com/CharlesStover/fetch-action-creator/issues"
+    "url": "https://github.com/dfkoh/redux-fetch-actions/issues"
   },
-  "description": "Fetches using standardized, four-part asynchronous actions for redux-thunk.",
+  "description": "Fetches using standardized, four-part asynchronous actions for redux-thunk. Based on fetch-action-creator.",
   "devDependencies": {
     "@types/node": "^10.5.2",
     "@types/redux": "^3.6.0",
@@ -17,7 +17,7 @@
     "redux-thunk": "^2.3.0",
     "typescript": "^3.1.2"
   },
-  "homepage": "https://github.com/CharlesStover/fetch-action-creator#readme",
+  "homepage": "https://github.com/dfkoh/redux-fetch-actions#readme",
   "keywords": [
     "async",
     "asynchronous",
@@ -32,14 +32,14 @@
     "state-management"
   ],
   "license": "MIT",
-  "main": "fetch-action-creator.js",
+  "main": "fetch-actions.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CharlesStover/fetch-action-creator.git"
+    "url": "git+https://github.com/dfkoh/redux-fetch-actions.git"
   },
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "test": "mocha fetch-action-creator.spec.js"
+    "test": "mocha fetch-actions.spec.js"
   }
 }

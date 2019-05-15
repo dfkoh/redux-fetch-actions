@@ -1,29 +1,33 @@
-# Fetch Action Creator [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Automate%20the%20process%20of%20writing%20Redux%20actions%20for%20Fetch%20API%20requests!%20Reduce%20boilerplate%20and%20errors%20with%20fetch-action-creator.&url=https://github.com/CharlesStover/fetch-action-creator&via=CharlesStover&hashtags=react,reactjs,javascript,redux,typescript,webdev,webdeveloper,webdevelopment)
+# Redux Fetch Actions
 
 Fetches using standardized, four-part asynchronous actions for redux-thunk.
+Based on [redux-fetch-actions](https://github.com/CharlesStover/redux-fetch-actions).
 
-Dispatch a single, asynchronous action that fetches a request, and your redux store will receive corresponding actions when your fetch API (1) requests, (2) resolves a response, (3) rejects an error, and/or (4) is aborted.
+Dispatch a single, asynchronous action that fetches a request, and your redux
+store will receive corresponding actions when your fetch API (1) requests, (2)
+resolves a response, (3) rejects an error, and/or (4) is aborted.
 
-[![version](https://img.shields.io/npm/v/fetch-action-creator.svg)](https://www.npmjs.com/package/fetch-action-creator)
-[![minified size](https://img.shields.io/bundlephobia/min/fetch-action-creator.svg)](https://www.npmjs.com/package/fetch-action-creator)
-[![minzipped size](https://img.shields.io/bundlephobia/minzip/fetch-action-creator.svg)](https://www.npmjs.com/package/fetch-action-creator)
-[![downloads](https://img.shields.io/npm/dt/fetch-action-creator.svg)](https://www.npmjs.com/package/fetch-action-creator)
-[![build](https://travis-ci.com/CharlesStover/fetch-action-creator.svg)](https://travis-ci.com/CharlesStover/fetch-action-creator/)
+[![version](https://img.shields.io/npm/v/redux-fetch-actions.svg)](https://www.npmjs.com/package/redux-fetch-actions)
+[![minified size](https://img.shields.io/bundlephobia/min/redux-fetch-actions.svg)](https://www.npmjs.com/package/redux-fetch-actions)
+[![minzipped size](https://img.shields.io/bundlephobia/minzip/redux-fetch-actions.svg)](https://www.npmjs.com/package/redux-fetch-actions)
+[![downloads](https://img.shields.io/npm/dt/redux-fetch-actions.svg)](https://www.npmjs.com/package/redux-fetch-actions)
+[![build](https://travis-ci.com/dfkoh/redux-fetch-actions.svg)](https://travis-ci.com/dfkoh/redux-fetch-actions/)
 
 ## Install
 
-* `npm install fetch-action-creator --save` or
-* `yarn add fetch-action-creator`
+* `npm install redux-fetch-actions --save` or
+* `yarn add redux-fetch-actions`
 
 Your redux store must be using the `redux-thunk` middleware.
 
 ## Basic Example
 
 ```JS
-import fetchActionCreator from 'fetch-action-creator';
+import {makeFetchActions, fetchActionTypes} from 'redux-fetch-actions';
 
+const EMPLOYEES = fetchActionTypes('EMPLOYEES');
 const fetchEmployees = () =>
-  fetchActionCreator(
+  makeFetchActions(
 
     // Included in the action types received by your redux store.
     'EMPLOYEES',
@@ -32,17 +36,21 @@ const fetchEmployees = () =>
     'https://my.business.com/employees.json'
   );
 ```
-The above example will send a `REQUEST_EMPLOYEES` action to the redux store, followed by one of the following: `ABORT_EMPLOYEES` if the request was aborted, `REJECT_EMPLOYEES` if an error occurred, or `RESOLVE_EMPLOYEES` if the data was received successfully.
+The above example will send a `EMPLOYEES_REQUEST` action to the redux store,
+followed by one of the following: `EMPLOYEES_ABORT` if the request was aborted,
+`EMPLOYEES_REJECT` if an error occurred, or `EMPLOYEES_RESOLVE` if the data was
+received successfully. These action names are also accessible from the 
+`EMPLOYEES` object created by fetchActionTypes, e.g. `EMPLOYEES.REQUEST`.
 
 See the documentation for a list of action properties.
 
 ## Advanced Example
 ```JS
-import fetchActionCreator from 'fetch-action-creator';
+import {makeFetchActions} from 'redux-fetch-actions';
 
 // We want to include an employee's name in the fetch request.
-const fetchAddEmployee = name =>
-  fetchActionCreator(
+const [ADD_EMPLOYEE, fetchAddEmployee] = name =>
+  makeFetchActions(
 
     // Included in the action types received by your redux store.
     'ADD_EMPLOYEE',
@@ -190,11 +198,7 @@ The values of this object may alternatively be a function, which will receive th
 
 * `onRequest`
   
-  * `abortController` contains an [AbortController instance](https://developer.mozilla.org/en-US/docs/Web/API/AbortController).
-
-    If you desire to abort any of your fetch requests, you should store this instance in your redux state.
-
-    If the user's browser does not support aborting requests, the value will be `null`.
+  * `body` contains the body of the request. This can be a JavaScript object or string.
 
 * `onResolve`
 
@@ -203,6 +207,10 @@ The values of this object may alternatively be a function, which will receive th
   * `headers` contains an instance of `Headers` with which the server responded to the request.
 
   * `statusCode` contains an integer value of the response status code, e.g. `200`.
+
+### abortController: AbortController | null
+
+`abortController` should be passed an [AbortController instance](https://developer.mozilla.org/en-US/docs/Web/API/AbortController). This instance will be connected to the fetch request when the request is made, and can be used to abort the request.
 
 ### conditional?: (state: Object) => boolean
 
