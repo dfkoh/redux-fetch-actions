@@ -22,19 +22,15 @@ ErrorResponse.prototype.clone = function() {
 ErrorResponse.prototype.json = () => new Promise((resolve, reject) => { 
   throw new Error('json parse error'); 
 });
-ErrorResponse.prototype.text =() => Promise.resolve('response.text()');
+ErrorResponse.prototype.text = () => Promise.resolve('response.text()');
 
-const fetchAsyncSuccess = () => new Promise(resolve => {
+const fetchAsyncSuccess = (_, { signal }) => new Promise((resolve, reject) => {
+  signal.addEventListener('abort', () => { reject(new Error()) });
   setTimeout(resolve, 1000);
 });
 const fetchError = () => Promise.reject(new Error('fetch error'));
 const fetchError404 = () => Promise.resolve(new Response(404));
-const fetchError3 = () => Promise.resolve(new ErrorResponse(404));
-const fetchError4 = () => {
-  const res = new ErrorResponse(404);
-  res.text = () => Promise.reject('response.text() reject');
-  return Promise.resolve(res);
-};
+const fetchErrorJSON = () => Promise.resolve(new ErrorResponse(404));
 const fetchSuccess = () => Promise.resolve(new Response(200));
 const getEmptyState = () => Object.create(null);
 
@@ -51,7 +47,7 @@ describe('fetchActionCreator', () => {
   });
 
   // REQUEST
-  it('should dispatch a request action', () => {
+  it('should dispatch a request action', async function() {
     global.fetch = fetchSuccess;
     const action = fetchActionCreator(ID, URL, INIT);
     let dispatchCalls = 0;
@@ -61,13 +57,12 @@ describe('fetchActionCreator', () => {
         expect(type).to.equal('REQUEST_' + ID);
       }
     };
-    return action(dispatch, getEmptyState).then(() => {
-      expect(dispatchCalls).to.equal(2);
-    });
+    await action(dispatch, getEmptyState);
+    expect(dispatchCalls).to.equal(2);
   });
 
   // RESOLVE
-  it('should dispatch a resolve action', () => {
+  it('should dispatch a resolve action', async function() {
     global.fetch = fetchSuccess;
     const action = fetchActionCreator(ID, URL, INIT);
     let dispatchCalls = 0;
@@ -77,13 +72,12 @@ describe('fetchActionCreator', () => {
         expect(type).to.equal('RESOLVE_' + ID);
       }
     };
-    return action(dispatch, getEmptyState).then(() => {
-      expect(dispatchCalls).to.equal(2);
-    });
+    await action(dispatch, getEmptyState);
+    expect(dispatchCalls).to.equal(2);
   });
 
   // REJECT (fetch)
-  it('should dispatch a fetch reject action', () => {
+  it('should dispatch a fetch reject action', async function() {
     global.fetch = fetchError;
     const action = fetchActionCreator(ID, URL, INIT);
     let dispatchCalls = 0;
@@ -93,13 +87,12 @@ describe('fetchActionCreator', () => {
         expect(type).to.equal('REJECT_' + ID);
       }
     };
-    return action(dispatch, getEmptyState).then(() => {
-      expect(dispatchCalls).to.equal(2);
-    });
+    await action(dispatch, getEmptyState);
+    expect(dispatchCalls).to.equal(2);
   });
 
   // REJECT (server)
-  it('should dispatch a server reject action', () => {
+  it('should dispatch a server reject action', async function() {
     global.fetch = fetchError404;
     const action = fetchActionCreator(ID, URL, INIT);
     let dispatchCalls = 0;
@@ -109,14 +102,13 @@ describe('fetchActionCreator', () => {
         expect(type).to.equal('REJECT_' + ID);
       }
     };
-    return action(dispatch, getEmptyState).then(() => {
-      expect(dispatchCalls).to.equal(2);
-    });
+    await action(dispatch, getEmptyState);
+    expect(dispatchCalls).to.equal(2);
   });
 
   // REJECT (json parse error)
-  it('should dispatch a server reject action even with json error', () => {
-    global.fetch = fetchError3;
+  it('should dispatch a server reject action even with json error', async function() {
+    global.fetch = fetchErrorJSON;
     const action = fetchActionCreator(ID, URL, INIT);
     let dispatchCalls = 0;
     const dispatch = ({ type, statusCode }) => {
@@ -126,69 +118,52 @@ describe('fetchActionCreator', () => {
         expect(statusCode).to.equal(404)
       }
     };
-    return action(dispatch, getEmptyState).then(() => {
-      expect(dispatchCalls).to.equal(2);
-    });
-  });
-
-  // REJECT (total parse error)
-  it('should dispatch a server reject action even with parse errors', () => {
-    global.fetch = fetchError4;
-    const action = fetchActionCreator(ID, URL, INIT);
-    let dispatchCalls = 0;
-    const dispatch = ({ type, statusCode }) => {
-      dispatchCalls++;
-      if (dispatchCalls === 2) {
-        expect(type).to.equal('REJECT_' + ID);
-        expect(statusCode).to.equal(404)
-      }
-    };
-    return action(dispatch, getEmptyState).then(() => {
-      expect(dispatchCalls).to.equal(2);
-    });
+    await action(dispatch, getEmptyState);
+    expect(dispatchCalls).to.equal(2);
   });
 
   // ABORT
-  it('should dispatch an abort action', () => {
+  it('should dispatch an abort action', async function() {
     global.fetch = fetchAsyncSuccess;
+    let called = false;
     let resolve = () => {};
+    abortController = new AbortController();
     const abortPromise = new Promise((r) => {
       resolve = r;
     });
-    const action = fetchActionCreator(ID, URL, INIT);
+    const action = fetchActionCreator(ID, URL, INIT, null, abortController);
     let dispatchCalls = 0;
     const dispatch = (action) => {
       dispatchCalls++;
-      if (action.type === 'REQUEST_' + ID) {
-        action.abortController.abort();
-      }
-      else if (action.type !== 'REJECT_' + ID) {
+      if (action.type !== 'REQUEST_' + ID && action.type !== 'REJECT_' + ID) {
         expect(action.type).to.equal('ABORT_' + ID);
         expect(dispatchCalls).to.equal(2);
+        called = true;
         resolve();
       }
     };
     action(dispatch, getEmptyState);
-    return abortPromise;
+    abortController.abort();
+    await abortPromise;
+    expect(called).to.be.true;
   });
 
   // CONDITIONAL
-  it('should respect the conditional', () => {
+  it('should respect the conditional', async function() {
     global.fetch = fetchSuccess;
     const action = fetchActionCreator(
-      ID, URL, INIT, null,
+      ID, URL, INIT, null, null,
       () => false
     );
     let dispatchCalls = 0;
     const dispatch = () => {
       dispatchCalls++;
     };
-    return action(dispatch, getEmptyState).then(() => {
-      expect(dispatchCalls).to.equal(0);
-    });
+    await action(dispatch, getEmptyState);
+    expect(dispatchCalls).to.equal(0);
   });
 
-  it('should allow object action mutation', () => {
+  it('should allow object action mutation', async function() {
     global.fetch = fetchSuccess;
     const action = fetchActionCreator(
       ID, URL, INIT, {
@@ -202,12 +177,11 @@ describe('fetchActionCreator', () => {
         expect(action.test).to.equal(123);
       }
     };
-    return action(dispatch, getEmptyState).then(() => {
-      expect(dispatchCalls).to.equal(2);
-    });
+    await action(dispatch, getEmptyState);
+    expect(dispatchCalls).to.equal(2);
   });
 
-  it('should allow function action mutation', () => {
+  it('should allow function action mutation', async function() {
     global.fetch = fetchSuccess;
     const action = fetchActionCreator(
       ID, URL, INIT, {
@@ -223,9 +197,8 @@ describe('fetchActionCreator', () => {
         expect(action.type).to.equal('NEW');
       }
     };
-    return action(dispatch, getEmptyState).then(() => {
-      expect(dispatchCalls).to.equal(2);
-    });
+    await action(dispatch, getEmptyState);
+    expect(dispatchCalls).to.equal(2);
   });
 
   // RESOLVE return
